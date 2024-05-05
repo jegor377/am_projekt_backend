@@ -6,7 +6,7 @@ import sqlite3
 DATABASE = './db.db'
 PORT = 5100
 IP = "192.168.5.63"
-URL = f"http://{IP}:{PORT}"
+URL = f"https://{IP}:{PORT}"
 
 
 def get_db():
@@ -50,10 +50,22 @@ def movie_details(movie_id=0):
     return movie
 
 
-@app.get("/movies")
-def movies():
+@app.get("/movies/<int:year>/<int:month>")
+def movies(year, month):
     db = get_db()
     res = db.cursor()
+
+    year_str = str(year).zfill(4)
+    if month != 0:
+        month_str = str(month).zfill(2)
+        next_month_str = str(month + 1).zfill(2)
+        condition = f"WHERE date(release_date) >= date('{year_str}-{month_str}-01') AND date(release_date) < date('{year_str}-{next_month_str}-01')"
+    else:
+        next_year_str = str(year + 1).zfill(4)
+        condition = f"WHERE date(release_date) >= date('{year_str}-01-01') AND date(release_date) < date('{next_year_str}-01-01')"
+
+    print(condition)
+
     res.execute("SELECT "
                 "m.id,"
                 "m.title,"
@@ -66,7 +78,8 @@ def movies():
                 f"('{URL}' || m.poster_url) as poster_url,"
                 "m.release_date"
                 " FROM movies m "
-                "LEFT JOIN genres g ON (m.genre_id = g.id)")
+                "LEFT JOIN genres g ON (m.genre_id = g.id) "
+                + condition)
 
     return res.fetchall()
 
@@ -86,4 +99,4 @@ def close_connection(exception):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=PORT)
+    app.run(host="0.0.0.0", port=PORT, ssl_context="adhoc")
