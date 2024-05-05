@@ -2,6 +2,8 @@ import mimetypes
 
 from flask import Flask, g, send_file, abort
 import sqlite3
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
 DATABASE = './db.db'
 PORT = 5100
@@ -56,13 +58,21 @@ def movies(year, month):
     res = db.cursor()
 
     year_str = str(year).zfill(4)
+    month_str = str(month).zfill(2)
+
+
     if month != 0:
-        month_str = str(month).zfill(2)
-        next_month_str = str(month + 1).zfill(2)
-        condition = f"WHERE date(release_date) >= date('{year_str}-{month_str}-01') AND date(release_date) < date('{year_str}-{next_month_str}-01')"
+        selected_date = datetime.strptime(f"{year_str}-{month_str}-01", "%Y-%m-%d")
+        selected_date_str = selected_date.strftime("%Y-%m-%d")
+        next_month_date = selected_date + relativedelta(months=1)
+        next_month_date_str = next_month_date.strftime("%Y-%m-%d")
+        condition = f"WHERE date(release_date) >= date('{selected_date_str}') AND date(release_date) < date('{next_month_date_str}')"
     else:
-        next_year_str = str(year + 1).zfill(4)
-        condition = f"WHERE date(release_date) >= date('{year_str}-01-01') AND date(release_date) < date('{next_year_str}-01-01')"
+        selected_date = datetime.strptime(f"{year_str}-01-01", "%Y-%m-%d")
+        selected_date_str = selected_date.strftime("%Y-%m-%d")
+        next_year_date = selected_date + relativedelta(years=1)
+        next_year_date_str = next_year_date.strftime("%Y-%m-%d")
+        condition = f"WHERE date(release_date) >= date('{selected_date_str}') AND date(release_date) < date('{next_year_date_str}')"
 
     print(condition)
 
